@@ -4,6 +4,13 @@ Reconstrucción del proyecto con un motor geoespacial: CesiumJS (globo real, ort
 
 > **Publicación y licencias:** el código es MIT (`LICENSE`); los datos tienen su propia licencia y atribución (`ATRIBUCIONES.md`). Qué se sube a GitHub, la revisión de privacidad y cómo colaborar con Menorca3D Forge: `GITHUB.md`.
 
+**Ver Menorca3D online:** https://aitorsantaeugenia.github.io/menorca3D/cesium/
+
+> [!IMPORTANT]
+> **Menorca3D Forge**, el editor para retocar las casas de este modelo, está en su propio repositorio: **[AitorSantaeugenia/menorca3D-Forge](https://github.com/AitorSantaeugenia/menorca3D-Forge)**
+> - **Probarlo online** (pide código de acceso): https://aitorsantaeugenia.github.io/menorca3D-Forge/app/
+> - **Descargar para Windows** (`MenorcaForge.zip` con el .exe): [MenorcaForge.zip](https://github.com/AitorSantaeugenia/menorca3D-Forge/releases/latest/download/MenorcaForge.zip)
+
 ## Estructura
 | Carpeta | Qué es |
 |---|---|
@@ -262,6 +269,9 @@ Después: `python pipeline/preparar_terreno_isla.py` (paso de malla por defecto 
 - **Caché:** los modelos llevan `?v=<huella>` en `zona.js`, y `servidor.py` envía `Cache-Control: no-cache`. Así, al regenerar, el navegador no usa modelos viejos.
 
 ## Casas retocadas a mano (Menorca3D Forge)
+> [!IMPORTANT]
+> Repositorio de Forge: **[AitorSantaeugenia/menorca3D-Forge](https://github.com/AitorSantaeugenia/menorca3D-Forge)** · [Probarlo online](https://aitorsantaeugenia.github.io/menorca3D-Forge/app/) (con código de acceso) · [Descargar MenorcaForge.zip](https://github.com/AitorSantaeugenia/menorca3D-Forge/releases/latest/download/MenorcaForge.zip) (Windows)
+
 `..\menorca3d_v2_forge` es un editor para corregir casas una a una. Se abre con doble clic en `iniciar.bat`; se busca la casa por número o referencia catastral, se edita y se pulsa «Enviar a Menorca3D».
 - Guarda cada casa en `menorca3d_v2\casas\<REF>.forge.json`.
 - `pipeline/exportar_glb.mjs` lee esa carpeta. Para cada referencia editada, usa la casa de Forge **en lugar de** la generada por v0.7.

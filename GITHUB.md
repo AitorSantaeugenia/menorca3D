@@ -7,6 +7,11 @@ Todo lo necesario para publicar los dos proyectos en GitHub y para que otras per
 | **menorca3d_v2** (público) | `Escritorio\menorca3d_v2` | El visor de la isla, el pipeline, los datos procesados y las casas editadas (`casas/`) |
 | **menorca3d_forge** (público) | `Escritorio\menorca3d_v2_forge` | El editor de casas y el empaquetador del .exe para colaboradores |
 
+> [!IMPORTANT]
+> **Enlaces**
+> - Menorca3D: repositorio [AitorSantaeugenia/menorca3D](https://github.com/AitorSantaeugenia/menorca3D) · visor online https://aitorsantaeugenia.github.io/menorca3D/cesium/
+> - Menorca3D Forge: repositorio [AitorSantaeugenia/menorca3D-Forge](https://github.com/AitorSantaeugenia/menorca3D-Forge) · online https://aitorsantaeugenia.github.io/menorca3D-Forge/app/ (con código de acceso) · [descargar MenorcaForge.zip](https://github.com/AitorSantaeugenia/menorca3D-Forge/releases/latest/download/MenorcaForge.zip)
+
 ## 1. Proceso de subida (a mano, con GitHub Desktop)
 Se sube **primero menorca3d_v2** y después Forge, porque el workflow que crea el .exe de Forge descarga menorca3d_v2 desde GitHub.
 
@@ -46,7 +51,7 @@ Se sube **primero menorca3d_v2** y después Forge, porque el workflow que crea e
    2. en «Choose a tag» escribe `v0.1` → «Create new tag»;
    3. pon de título «Menorca3D Forge 0.1» → «Publish release».
 
-   El workflow «Construir .exe» crea `MenorcaForge.zip` en un servidor Windows y lo adjunta a esa versión en unos minutos. El enlace que mandas a los colaboradores es `https://github.com/<usuario>/menorca3d_forge/releases/latest`.
+   El workflow «Construir .exe» crea `MenorcaForge.zip` en un servidor Windows y lo adjunta a esa versión en unos minutos. El enlace que mandas a los colaboradores es `https://github.com/AitorSantaeugenia/menorca3D-Forge/releases/latest/download/MenorcaForge.zip`.
 
 ### Fase 3 · Día a día
 | Qué ha pasado | Qué haces |
