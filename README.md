@@ -2,6 +2,12 @@
 
 Reconstrucción del proyecto con un motor geoespacial: CesiumJS (globo real, ortofoto, carga por teselas). Más adelante se añadirán reconstrucciones de HY-World 2.0. El proyecto original (`Escritorio\menorca3d`) no se modifica: solo se lee.
 
+- Modo noche
+![Visor de Menorca3D](https://github.com/user-attachments/assets/53d8a539-2553-47d3-8121-0635fb9b721b)
+
+- Modo día
+![Visor de Menorca3D](https://github.com/user-attachments/assets/50c418d1-5bec-4e0d-8f44-9532f7a20740)
+
 > **Publicación y licencias:** el código es MIT (`LICENSE`); los datos tienen su propia licencia y atribución (`ATRIBUCIONES.md`). Qué se sube a GitHub, la revisión de privacidad y cómo colaborar con Menorca3D Forge: `GITHUB.md`.
 
 **Ver Menorca3D online:** https://aitorsantaeugenia.github.io/menorca3D/cesium/
@@ -10,6 +16,27 @@ Reconstrucción del proyecto con un motor geoespacial: CesiumJS (globo real, ort
 > **Menorca3D Forge**, el editor para retocar las casas de este modelo, está en su propio repositorio: **[AitorSantaeugenia/menorca3D-Forge](https://github.com/AitorSantaeugenia/menorca3D-Forge)**
 > - **Probarlo online** (pide código de acceso): https://aitorsantaeugenia.github.io/menorca3D-Forge/app/
 > - **Descargar para Windows** (`MenorcaForge.zip` con el .exe): [MenorcaForge.zip](https://github.com/AitorSantaeugenia/menorca3D-Forge/releases/latest/download/MenorcaForge.zip)
+
+## Demostración
+### Vista aérea de Es Castell
+Así se ve al entrar: la cámara vuela desde la isla y se coloca sobre Es Castell (resto de pueblos - WIP).
+
+![Vista aérea de Es Castell al entrar](https://github.com/user-attachments/assets/4296c621-7ada-4c38-992e-68363b245e43)
+
+### Servicios 1 · Autobús L02
+La ruta y los autobuses de la línea L02, con su posición en directo o estimada según el horario. «🚌 Ver bus en ruta» lleva la cámara encima del autobús.
+
+![Autobús L02 en ruta](https://github.com/user-attachments/assets/4761c08f-05cc-41ad-98d0-3fa17fd8d042)
+
+### Servicios 2 · Farmacias
+Las farmacias, con su ficha y la cruz que se enciende de noche.
+
+![Farmacias](https://github.com/user-attachments/assets/930ed29c-a468-4bb4-ac77-f1b3718bb1ca)
+
+### Ficha del Catastro (doble clic en el mapa)
+Doble clic en un edificio del mapa para ver su referencia catastral y sus datos.
+
+![Ficha del Catastro con doble clic en el mapa](https://github.com/user-attachments/assets/28482316-e97d-43c2-8461-c5673f475856)
 
 ## Estructura
 | Carpeta | Qué es |
