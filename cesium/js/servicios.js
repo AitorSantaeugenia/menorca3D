@@ -186,7 +186,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
     { id: 'ruta', nombre: 'Ruta del bus L02 en Es Castell (clic en una parada: ruta completa)', on: true },
     { id: 'calle', nombre: 'Detalle de calle (aceras, árboles, muros…)', on: true },
     { id: 'frontera', nombre: 'Frontera del municipio', on: true },
-    { id: 'faros', nombre: 'Faros y balizas (de noche)', on: true },
+    { id: 'faros', nombre: 'Faros y balizas', on: true },
     { id: 'luces', nombre: 'Luces de noche (focos del campo de fútbol, cruz de la farmacia)', on: true },
     { id: 'mar', nombre: 'Mar animado', on: true },
   ];
@@ -202,6 +202,9 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
   lp.querySelectorAll('input').forEach(i => i.onchange = () => set(i.dataset.id, i.checked));
   CAPAS.forEach(c => set(c.id, c.on));
   $('btnLayers').onclick = () => { lp.style.display = lp.style.display == 'block' ? 'none' : 'block'; };
+  // Capas que solo se ven de noche: de día no se muestran en el panel (conservan si estaban marcadas o no)
+  const SOLO_NOCHE = ['faros', 'luces'];
+  const setNoche = n => { for (const id of SOLO_NOCHE) { const i = lp.querySelector(`input[data-id="${id}"]`); if (i) i.closest('label').style.display = n ? '' : 'none'; } };
 
   // Clic en un icono de servicio o en la marquesina de la parada
   const busPos = BUS ? BUS.stops[BUS.paradaVisor].ll : null;
@@ -217,7 +220,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
       if (abierta) { close(); return true; }
       return false;
     },
-    close, abrir, set,
+    close, abrir, set, setNoche,
   };
   return api;
 };

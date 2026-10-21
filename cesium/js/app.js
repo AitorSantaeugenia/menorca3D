@@ -266,6 +266,7 @@
   try { if (typeof createLucesNoche == 'function') luces = createLucesNoche({ C, viewer, ground }); else console.warn('Falta js/luces.js: recarga con Ctrl+F5'); }
   catch (e) { console.error('Luces de noche:', e); }
   let night = isNightNow(), autoNight = night, farosOn = true;
+  let alCambiarNoche = () => {};   // lo usa el panel de capas (se crea más abajo)
   function applyNight() {
     for (const o of orthoLayers) { o.brightness = night ? .16 : 1; o.contrast = night ? 1.2 : 1; o.saturation = night ? .25 : 1; o.gamma = night ? 1.1 : 1; }
     scene.light = night ? moon : sun;
@@ -274,7 +275,8 @@
     scene.fog.density = night ? 4e-4 : 2e-4;
     for (const sh of shaders) sh.setUniform('u_night', night ? 1 : 0);
     seaMat.uniforms.baseWaterColor = night ? SEA_NIGHT : SEA_DAY;
-    luces.update(night);
+    luces.update(night, night && night != autoNight);   // noche puesta a mano: focos encendidos a cualquier hora
+    alCambiarNoche(night);
     lamps.show = coast.show = night; lights.show = beams.show = labels.show = night && farosOn;
     if (buildings && buildings.ready) B.forEach((_, i) => { if (i !== sel) setCol(i, night ? nightCol[i] : dayCol[i]); });
     // El botón muestra el modo ACTUAL (como en v0.7); al abrir coincide con la hora real. Clic: cambia al otro modo.
@@ -413,6 +415,7 @@
     mar: v => { sea.show = v; },
     luces: v => luces.setEnabled(v),
   } });
+  alCambiarNoche = n => servicios.setNoche(n); alCambiarNoche(night);
 
   // ---------- Girar la cámara: botones ⟲ ⟳ (mantener pulsado), «N» para mirar al norte, teclas Q / E ----------
   // Gira alrededor del punto del suelo que hay en el centro de la pantalla, sin cambiar la inclinación ni la distancia.

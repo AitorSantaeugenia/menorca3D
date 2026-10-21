@@ -1,6 +1,6 @@
 // Luces de noche de lugares concretos (datos: data/luces.js, generado por pipeline/exportar_glb.mjs).
 // - Campo de fútbol de la Zona Deportiva Sergio Llull: focos encendidos de noche hasta las 00:00 (ESTIMADO: a partir de
-//   medianoche ya no hay nadie jugando). Se ven el brillo de cada proyector, un cono de luz translúcido hacia el campo y el césped iluminado.
+//   medianoche ya no hay nadie jugando). Si se pone la noche a mano (botón Día/Noche), se encienden siempre. Se ven el brillo de cada proyector, un cono de luz translúcido hacia el campo y el césped iluminado.
 // - Sa Farmàcia: halo verde alrededor de la cruz y luz verde en la acera, toda la noche.
 function createLucesNoche({ C, viewer, ground }) {
   const L = window.MENORCA_LUCES, scene = viewer.scene;
@@ -43,10 +43,11 @@ function createLucesNoche({ C, viewer, ground }) {
       material: new C.ImageMaterialProperty({ image: halo('40,255,110', '120,255,160'), transparent: true }) } });
   }
 
-  let night = false, enabled = true;   // enabled: casilla «Luces de noche» del panel Capas
-  const focosOn = () => { const h = new Date().getHours(); return enabled && night && h >= 7; };   // de 00:00 a 07:00, apagados
-  function update(n) {
-    if (n !== undefined) night = n;
+  let night = false, forzada = false, enabled = true;   // enabled: casilla «Luces de noche» del panel Capas
+  // De 00:00 a 07:00 (hora real) los focos están apagados; si la noche se ha puesto a mano (botón Día/Noche), siempre encendidos
+  const focosOn = () => { const h = new Date().getHours(); return enabled && night && (forzada || h >= 7); };
+  function update(n, aMano) {
+    if (n !== undefined) { night = n; forzada = !!aMano; }
     const on = focosOn();
     bills.show = campo.show = on;
     fb.show = farm.show = enabled && night;

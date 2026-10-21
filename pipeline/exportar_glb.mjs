@@ -332,8 +332,12 @@ if (ZONA) {
     for (const f of u.focos || []) L.focos.push({ ll: ll(f.x, f.z), y: r2(f.y), t: ll(f.t[0], f.t[2]), ty: r2(f.t[1]) });
     if (u.campo) L.campos.push({ p: u.campo.p.map(q => ll(q[0], q[1])), y: r2(u.campo.y) });
     if (u.farmacia) L.farmacias.push({ ll: ll(u.farmacia.x, u.farmacia.z), y: r2(u.farmacia.y), suelo: r2(u.farmacia.suelo) }); });
-  fs.writeFileSync(path.join(ROOT, 'cesium/data/luces.js'), `// Generado por pipeline/exportar_glb.mjs: luces de noche (y = altura elipsoidal, como los modelos).\nwindow.MENORCA_LUCES = ${JSON.stringify(L)};\n`);
-  console.log(`escrito cesium/data/luces.js: ${L.focos.length} focos, ${L.farmacias.length} farmacia(s)`);
+  // Solo se escribe si esta zona tiene luces (o es la zona detallada): al exportar después el resto del municipio, que no
+  // tiene ninguna, no se vacía luces.js (pasaba en GitHub Actions, que exporta las dos zonas seguidas).
+  if (name == 'zona' || L.focos.length || L.farmacias.length) {
+    fs.writeFileSync(path.join(ROOT, 'cesium/data/luces.js'), `// Generado por pipeline/exportar_glb.mjs: luces de noche (y = altura elipsoidal, como los modelos).\nwindow.MENORCA_LUCES = ${JSON.stringify(L)};\n`);
+    console.log(`escrito cesium/data/luces.js: ${L.focos.length} focos, ${L.farmacias.length} farmacia(s)`);
+  } else console.log('sin luces de noche en esta zona: cesium/data/luces.js no se toca');
 }
 for (const S of SETS) {
   const { parts, tris } = collect(S.group), entries = []; let bytes = 0;
