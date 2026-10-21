@@ -109,7 +109,7 @@
     baseWaterColor: SEA_NIGHT.clone(), blendColor: new C.Color(.05, .25, .3, 1), normalMap: C.buildModuleUrl('Assets/Textures/waterNormals.jpg'),
     frequency: 8000, animationSpeed: .015, amplitude: 4, specularIntensity: .6 } } });
   const sea = scene.primitives.add(new C.Primitive({
-    geometryInstances: new C.GeometryInstance({ geometry: new C.RectangleGeometry({ rectangle: C.Rectangle.fromDegrees(2.6, 38.9, 5.6, 40.9),
+    geometryInstances: new C.GeometryInstance({ geometry: new C.RectangleGeometry({ rectangle: C.Rectangle.fromDegrees(2.0, 38.5, 6.2, 41.3),
       height: 0, granularity: C.Math.toRadians(.02), vertexFormat: C.EllipsoidSurfaceAppearance.VERTEX_FORMAT }) }),
     appearance: new C.EllipsoidSurfaceAppearance({ aboveGround: false, translucent: false, material: seaMat }), asynchronous: true }));
   for (const t of ['Edificios: © Dirección General del Catastro', 'Calles, costa y faros: © colaboradores de OpenStreetMap (ODbL)',
@@ -359,6 +359,27 @@
   camera.setView(ISLAND);
   let orbit = true;   // giro lento de la isla en la intro
   scene.preRender.addEventListener(() => { if (orbit) camera.rotate(C.Cartesian3.normalize(C.Cartesian3.fromDegrees(4.06, 39.95), new C.Cartesian3()), 2e-5); });
+
+  // ---------- Límites de la cámara: como mucho, media isla más allá de la costa por cada lado ----------
+  // Así no se llega a donde ya no hay mar ni ortofoto. Se limita el punto al que mira la cámara (centro de la pantalla):
+  // si se sale, la cámara se desplaza lo justo para volver al borde (hace de pared al arrastrar).
+  const LIM = (() => {
+    let w = 1e9, s = 1e9, e = -1e9, n = -1e9;
+    for (const l of D.coast || []) for (const [lo, la] of l) { w = Math.min(w, lo); e = Math.max(e, lo); s = Math.min(s, la); n = Math.max(n, la); }
+    if (w > e) return null;
+    const mx = (e - w) / 2, my = (n - s) / 2;   // media isla de ancho (este-oeste) y de alto (norte-sur)
+    return { w: w - mx, e: e + mx, s: s - my, n: n + my };
+  })();
+  const centroPantalla = new C.Cartesian2();
+  if (LIM) scene.preRender.addEventListener(() => {
+    centroPantalla.x = scene.canvas.clientWidth / 2; centroPantalla.y = scene.canvas.clientHeight / 2;
+    const p = camera.pickEllipsoid(centroPantalla), cam = camera.positionCartographic;
+    const g = p ? C.Cartographic.fromCartesian(p) : cam, lo = C.Math.toDegrees(g.longitude), la = C.Math.toDegrees(g.latitude);
+    const dlo = Math.min(0, LIM.e - lo) + Math.max(0, LIM.w - lo), dla = Math.min(0, LIM.n - la) + Math.max(0, LIM.s - la);
+    if (!dlo && !dla) return;
+    camera.setView({ destination: C.Cartesian3.fromDegrees(C.Math.toDegrees(cam.longitude) + dlo, C.Math.toDegrees(cam.latitude) + dla, cam.height),
+      orientation: { heading: camera.heading, pitch: camera.pitch, roll: camera.roll } });
+  });
 
   $('enter').onclick = () => {
     zoomMin(true); $('menuBtn').style.display = 'none'; orbit = false; startModels(); $('overlay').classList.add('off'); setTimeout(() => $('overlay').style.display = 'none', 1000);
