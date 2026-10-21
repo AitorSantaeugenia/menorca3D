@@ -1,6 +1,7 @@
 // Capas del visor (botón «Capas» bajo el minimapa, al estilo del IDE Menorca), capa «Servicios» con fichas y horarios,
 // y la línea de bus L02 (TMSA): ruta, horarios de la parada y, si el visor se abre con pipeline/servidor.py, la
 // posición de los autobuses en directo (TMSA no permite pedirla directamente desde otra web: hace falta ese proxy).
+// Sin ese proxy (p. ej. en GitHub Pages) se muestra la posición ESTIMADA según el horario.
 window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) {
   const $ = id => document.getElementById(id), scene = viewer.scene;
   const S = window.SERVICIOS || [], BUS = window.BUS_L02 || null;
@@ -111,25 +112,92 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
       label: { text: st.n, font: '600 11px system-ui', fillColor: C.Color.WHITE, outlineColor: C.Color.fromCssColorString('#1f5fa8'), outlineWidth: 3, style: C.LabelStyle.FILL_AND_OUTLINE,
         pixelOffset: new C.Cartesian2(0, -16), disableDepthTestDistance: Number.POSITIVE_INFINITY, distanceDisplayCondition: new C.DistanceDisplayCondition(0, 6000) } });
   }
-  // Autobuses en directo: solo si el visor se sirve con pipeline/servidor.py (proxy /tmsa/...)
+  // ---------- Autobuses ahora ----------
+  // 1) EN DIRECTO (REAL): posición de TMSA a través de un intermediario. En local, pipeline/servidor.py (/tmsa/...).
+  //    Para otro servicio (p. ej. un Worker en la nube), basta con definir antes de este script:
+  //      window.MENORCA_BUS_DIRECTO = 'https://…/posicion/602/{sentido}'
+  // 2) Si no hay intermediario (p. ej. GitHub Pages): posición ESTIMADA según el horario (bus_l02.js): por cada
+  //    expedición en ruta, el punto del recorrido que corresponde a la hora actual, sin retrasos.
+  const LIVE_URL = window.MENORCA_BUS_DIRECTO || '/tmsa/posicion/602/{sentido}';
   const live = new C.CustomDataSource('busLive'); viewer.dataSources.add(live);
-  let liveTimer = null, liveOK = null, liveInfo = '';
+  let liveTimer = null, liveOK = null, liveData = [], liveAt = 0, liveInfo = '';
+
+  // Recorrido de cada sentido en metros y distancia de cada parada a lo largo de él (paradas en orden)
+  const R = {};
+  if (BUS) for (const sent of BUS.sentidos) {
+    const pts = BUS.ruta[sent.id] || [], cum = [0], KX = 111320 * Math.cos(39.88 * Math.PI / 180), KY = 110540;
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot((pts[i][1] - pts[i - 1][1]) * KX, (pts[i][0] - pts[i - 1][0]) * KY));
+    let from = 0;
+    const dStop = sent.stops.map(code => {   // proyección de la parada sobre el recorrido, siempre hacia delante
+      const [la, lo] = BUS.stops[code].ll; let best = Infinity, bd = cum[from];
+      for (let i = from; i < pts.length - 1; i++) {
+        const ax = pts[i][1] * KX, ay = pts[i][0] * KY, bx = pts[i + 1][1] * KX, by = pts[i + 1][0] * KY, px = lo * KX, py = la * KY;
+        const L2 = (bx - ax) ** 2 + (by - ay) ** 2, t = L2 ? Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / L2)) : 0;
+        const dd = Math.hypot(ax + (bx - ax) * t - px, ay + (by - ay) * t - py);
+        if (dd < best - .5) { best = dd; bd = cum[i] + Math.sqrt(L2) * t; from = i; }
+      }
+      return bd;
+    });
+    R[sent.id] = { pts, cum, dStop };
+  }
+  const enRuta = (k, dist) => {   // punto del recorrido a «dist» metros del inicio
+    const { pts, cum } = R[k]; let i = 1; while (i < cum.length - 1 && cum[i] < dist) i++;
+    const f = cum[i] > cum[i - 1] ? Math.max(0, Math.min(1, (dist - cum[i - 1]) / (cum[i] - cum[i - 1]))) : 0;
+    return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
+  };
+  function estimados() {
+    if (!BUS) return [];
+    const d = new Date(), m = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60, tipo = tipoDia(d.getDay() || 7), out = [];
+    for (const sent of BUS.sentidos) {
+      const r = R[sent.id]; if (!r || r.pts.length < 2) continue;
+      for (const row of salidas(sent, tipo)) {
+        if (m < row[0] || m > row[row.length - 1]) continue;
+        // El horario da minutos enteros y varias paradas comparten minuto: se interpola por distancia entre la primera
+        // parada de cada minuto distinto (y la última), así el autobús avanza sin saltos.
+        const anc = []; row.forEach((t, i) => { if (!anc.length || t > anc[anc.length - 1][0]) anc.push([t, r.dStop[i]]); });
+        anc.push([row[row.length - 1], r.dStop[row.length - 1]]);
+        let j = 1; while (j < anc.length - 1 && anc[j][0] < m) j++;
+        const [t0, d0] = anc[j - 1], [t1, d1] = anc[j], dist = d0 + (d1 - d0) * (t1 > t0 ? (m - t0) / (t1 - t0) : 1);
+        let sig = sent.stops.findIndex((_, i) => r.dStop[i] > dist + 5); if (sig < 0) sig = sent.stops.length - 1;
+        const iv = sent.stops.indexOf(BUS.paradaVisor);
+        out.push({ k: sent.id, sentido: sent.nombre, salida: row[0], ll: enRuta(sent.id, dist), siguiente: BUS.stops[sent.stops[sig]].n,
+          anterior: sig > 0 ? BUS.stops[sent.stops[sig - 1]].n : null, llegaVisor: iv >= 0 && row[iv] >= m ? row[iv] : null, fin: row[row.length - 1] });
+      }
+    }
+    return out;
+  }
+  const busEntity = (lon, lat, texto, estimado) => live.entities.add({ position: C.Cartesian3.fromDegrees(lon, lat, ground(lon, lat) + 3),
+    billboard: { image: icon('bus'), width: 28, height: 35, verticalOrigin: C.VerticalOrigin.BOTTOM, disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      color: estimado ? C.Color.WHITE.withAlpha(.8) : C.Color.WHITE },
+    label: { text: texto, font: '600 11px system-ui', fillColor: C.Color.WHITE, outlineColor: C.Color.BLACK, outlineWidth: 3,
+      style: C.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new C.Cartesian2(0, -40), disableDepthTestDistance: Number.POSITIVE_INFINITY } });
   async function pollLive() {
-    const out = [];
-    for (const k of [1, 2]) {
-      try { const r = await fetch(`/tmsa/posicion/602/${k}`, { cache: 'no-store' }); if (!r.ok) throw 0; out.push(...(await r.json()).map(b => ({ ...b, k }))); liveOK = true; }
-      catch { if (liveOK == null) liveOK = false; }
+    // En directo: cada 20 s mientras funcione; si el primer intento falla (sin intermediario), ya no se vuelve a pedir
+    if (liveOK !== false && Date.now() - liveAt > 19000) {
+      liveAt = Date.now(); const out = []; let ok = false;
+      for (const k of [1, 2]) {
+        try { const r = await fetch(LIVE_URL.replace('{sentido}', k), { cache: 'no-store' }); if (!r.ok) throw 0; out.push(...(await r.json()).map(b => ({ ...b, k }))); ok = true; }
+        catch { /* sin intermediario o sin conexión */ }
+      }
+      if (ok) { liveOK = true; liveData = out; } else if (liveOK == null) liveOK = false;
     }
     live.entities.removeAll();
-    for (const b of out) live.entities.add({ position: C.Cartesian3.fromDegrees(+b.lon, +b.lat, ground(+b.lon, +b.lat) + 3),
-      billboard: { image: icon('bus'), width: 28, height: 35, verticalOrigin: C.VerticalOrigin.BOTTOM, disableDepthTestDistance: Number.POSITIVE_INFINITY },
-      label: { text: `Bus ${b.bus_id} · ${b.k == 1 ? '→ Es Castell' : '→ Maó'}`, font: '600 11px system-ui', fillColor: C.Color.WHITE, outlineColor: C.Color.BLACK, outlineWidth: 3,
-        style: C.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new C.Cartesian2(0, -40), disableDepthTestDistance: Number.POSITIVE_INFINITY } });
-    liveInfo = liveOK ? (out.length ? out.map(b => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small></li>`).join('') : '<li>Ahora mismo no hay ningún autobús de la L02 en ruta.</li>')
-      : '<li class="k">Posición en directo no disponible: abre el visor con <code>python pipeline/servidor.py</code> para verla.</li>';
+    if (liveOK) {
+      for (const b of liveData) busEntity(+b.lon, +b.lat, `Bus ${b.bus_id} · ${b.k == 1 ? '→ Es Castell' : '→ Maó'}`, false);
+      liveInfo = liveData.length ? liveData.map(b => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small></li>`).join('')
+        : '<li>Ahora mismo no hay ningún autobús de la L02 en ruta.</li>';
+      liveInfo = '<li class="k sm">EN DIRECTO (TMSA)</li>' + liveInfo;
+    } else if (liveOK === false) {
+      const E = estimados(), m = new Date().getHours() * 60 + new Date().getMinutes();
+      for (const e of E) busEntity(e.ll[1], e.ll[0], `≈ ${e.k == 1 ? '→ Es Castell' : '→ Maó'} (${hm(e.salida)})`, true);
+      liveInfo = '<li class="k sm">ESTIMADO según el horario: sin retrasos ni incidencias</li>' + (E.length ? E.map(e => `<li><b>${esc(e.sentido)}</b> (salida ${hm(e.salida)}): `
+        + (e.anterior ? `entre ${esc(e.anterior)} y <b>${esc(e.siguiente)}</b>` : `en <b>${esc(e.siguiente)}</b>`)
+        + (e.llegaVisor != null ? ` · en Es Castell (Església) ${e.llegaVisor - m <= 0 ? 'ahora' : `en ${e.llegaVisor - m} min`}` : ` · llega a las ${hm(e.fin)}`) + '</li>').join('')
+        : '<li>Según el horario, ahora mismo no hay ningún autobús de la L02 en ruta.</li>');
+    } else liveInfo = '<li class="k">Consultando…</li>';
     const el = $('busLive'); if (el) el.innerHTML = liveInfo;
   }
-  const startLive = () => { if (liveTimer) return; pollLive(); liveTimer = setInterval(pollLive, 20000); };
+  const startLive = () => { if (liveTimer) return; pollLive(); liveTimer = setInterval(pollLive, 5000); };
   const stopLive = () => { clearInterval(liveTimer); liveTimer = null; live.entities.removeAll(); };
 
   // ---------- Panel de información ----------
@@ -165,7 +233,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
       const next = salidas(sent, tipo).map(row => row[i]).filter(t => t >= m).slice(0, 4);
       h += `<div><b>${esc(sent.nombre)}</b>${r ? ` <small class="k">(${RESTR[r]})</small>` : ''}: ${next.length ? next.map(hm).join(' · ') : 'no hay más hoy'}</div>`;
     }
-    h += '<div class="it">Autobuses en directo</div><ul id="busLive"><li class="k">Consultando…</li></ul>';
+    h += `<div class="it">Autobuses ahora</div><ul id="busLive">${liveInfo || '<li class="k">Consultando…</li>'}</ul>`;
     h += '<div class="it">Recorrido y horarios completos</div><div class="tabs">' + ['lv', 'sab', 'dom'].map(t => `<button data-tab="${t}" class="${t == tipo ? 'on' : ''}">${NOMBRE_DIA[t]}</button>`).join('') + '</div>';
     for (const t of ['lv', 'sab', 'dom']) {
       h += `<div class="tt" data-t="${t}" style="display:${t == tipo ? 'block' : 'none'}">`;

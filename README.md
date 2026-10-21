@@ -186,6 +186,8 @@ Después: `python pipeline/preparar_terreno_isla.py` (paso de malla por defecto 
 - **Bus L02 Maó – Es Castell** (`cesium/data/bus_l02.js`, datos de tmsa.es copiados el 13-10-2026 y vigentes hasta el 31-05-2027): paradas, recorrido de los dos sentidos y horarios de lunes a viernes, sábados y domingos y festivos.
   - **Al hacer clic en la parada** (en su icono o en la marquesina 3D, delante de la iglesia): se ven los próximos autobuses, la ruta en el mapa y las tablas completas.
   - **Autobuses en directo:** abre el visor con `python pipeline/servidor.py` en lugar de `python -m http.server`. Es igual, pero añade un pequeño proxy hacia la web de TMSA, que no deja pedir la posición directamente desde el navegador.
+  - **Sin ese proxy** (por ejemplo, en la web publicada en GitHub Pages): el visor muestra la posición **ESTIMADA según el horario**. Calcula, para cada expedición en ruta, el punto del recorrido que corresponde a la hora actual, entre qué paradas va y cuándo llega a Es Castell. No tiene en cuenta retrasos y se marca como «≈ … estimado».
+  - **Para tener la posición real también en la web**, basta con un intermediario en la nube (por ejemplo, un Worker de Cloudflare que haga lo mismo que `servidor.py`) y definir su dirección antes de `js/servicios.js`: `window.MENORCA_BUS_DIRECTO = 'https://…/posicion/602/{sentido}'`.
   - **Si TMSA cambia horarios:** hay que actualizar `bus_l02.js`.
 - **Marquesina de la parada:** modelo 3D en `v0.7/src/buildings/church.js` (`busShelter`). La posición es la de TMSA; la forma, ESTIMADA.
 - **Girar la cámara:** botones ⟲ ⟳ (mantener pulsado) y N (mirar al norte) bajo el minimapa, o las teclas Q y E.
