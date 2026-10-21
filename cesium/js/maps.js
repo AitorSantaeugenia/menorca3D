@@ -1,16 +1,14 @@
 // Minimapa (arriba a la derecha) y mapa grande de edificios (doble clic en el minimapa o tecla M), como en v0.7
 // (v0.7/src/map/minimap.js y bigMap.js), adaptados a Cesium.
 // Edificios: piezas REALES del Catastro agrupadas por referencia catastral, con el número estable de v0.7
-// (edificios.json) y su estado: rojo = pendiente, verde = acabado. Los cambios de estado se guardan en este navegador
-// y se pueden exportar (Exportar → edificios.json), porque el servidor local (python -m http.server) no escribe archivos.
+// (edificios.json). Todas las parcelas en el mismo color neutro; clic: ficha del edificio.
 // Coordenadas del mapa: el plano local de v0.7 (x este, z sur, metros) con origen en D.origin.
 window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
   const $ = id => document.getElementById(id), scene = viewer.scene, camera = viewer.camera;
   const O = D.origin, KX = D.terrain.kx, KZ = D.terrain.kz;
   const toXZ = (lon, lat) => [(lon - O.lon) * KX, -(lat - O.lat) * KZ];
   const toLL = (x, z) => [O.lon + x / KX, O.lat - z / KZ];
-  const ESTADO_COLOR = { pendiente: '#e03131', acabado: '#2f9e44' };
-  const MASK = { pendiente: 'rgba(224,49,49,.55)', acabado: 'rgba(47,158,68,.7)' };
+  const PARCELA = '#ece6d8', RESALTE = '#ffd43b';   // color de las parcelas en el mapa grande y del contorno de «Ir delante»
 
   // ---------- Edificios: piezas → parcelas ----------
   const ringXZ = flat => { const r = []; for (let i = 0; i < flat.length; i += 2) r.push(toXZ(flat[i], flat[i + 1])); const f = r[0], l = r[r.length - 1]; if (r.length > 1 && f[0] == l[0] && f[1] == l[1]) r.pop(); return r; };
@@ -22,9 +20,6 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
     const e = byRef.get(b.r) || byRef.set(b.r, { ref: b.r, n: null, pieces: [] }).get(b.r);
     e.pieces.push({ i, r, holes, f: b.f, base: b.b }); if (b.n) e.n = b.n;
   });
-  const LS = 'm3d-v2-estados';
-  let pend = {}; try { pend = JSON.parse(localStorage.getItem(LS) || '{}'); } catch { /* sin almacenamiento */ }
-  const EST = window.MENORCA_ESTADOS || {};
   let maxN = 0; for (const e of byRef.values()) if (e.n) maxN = Math.max(maxN, e.n);
   const all = [], byN = new Map(), grid = new Map(), G = 25;
   for (const e of [...byRef.values()].sort((a, b) => (a.n || 1e9) - (b.n || 1e9) || (a.ref < b.ref ? -1 : 1))) {
@@ -39,22 +34,13 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
     const lab = pip(cx / A, cz / A, big.r) ? [cx / A, cz / A] : [big.cx, big.cz];
     const path = new Path2D();
     for (const p of e.pieces) for (const rr of [p.r, ...p.holes]) { rr.forEach((q, k) => k ? path.lineTo(q[0], q[1]) : path.moveTo(q[0], q[1])); path.closePath(); }
-    const b = { ...e, provisional, estado: pend[e.ref] || EST[e.ref] || 'pendiente', A, lab, box: [x0, x1, z0, z1], path,
+    const b = { ...e, provisional, A, lab, box: [x0, x1, z0, z1], path,
       floors: Math.max(...e.pieces.map(p => p.f)), base: Math.min(...e.pieces.map(p => p.base)) };
     all.push(b); byN.set(b.n, b); byRef.set(b.ref, b);
     for (let gx = Math.floor(x0 / G); gx <= Math.floor(x1 / G); gx++) for (let gz = Math.floor(z0 / G); gz <= Math.floor(z1 / G); gz++) { const k = gx + ',' + gz; (grid.get(k) || grid.set(k, []).get(k)).push(b); }
   }
   const at = (x, z) => { for (const b of grid.get(Math.floor(x / G) + ',' + Math.floor(z / G)) || []) if (b.pieces.some(p => pip(x, z, p.r) && !p.holes.some(h => pip(x, z, h)))) return b; return null; };
   const get = q => { q = String(q).trim().toUpperCase(); return byN.get(+q) || byRef.get(q) || all.find(b => b.ref.startsWith(q) && q.length >= 7) || null; };
-  const listeners = new Set();
-  const setEstado = (b, estado) => {
-    b.estado = estado; if (estado == (EST[b.ref] || 'pendiente')) delete pend[b.ref]; else pend[b.ref] = estado;
-    try { localStorage.setItem(LS, JSON.stringify(pend)); } catch { /* sin almacenamiento */ }
-    listeners.forEach(f => f());
-  };
-  const toggle = b => setEstado(b, b.estado == 'acabado' ? 'pendiente' : 'acabado');
-  const exportJSON = () => JSON.stringify({ nota: 'Exportado desde Menorca 3D v2 (cesium). Números estables de v0.7; provisional = fuera de la zona numerada.',
-    edificios: all.slice().sort((a, b) => a.n - b.n).map(b => ({ n: b.n, ref: b.ref, estado: b.estado, ...(b.provisional ? { provisional: true } : {}) })) }, null, 1);
 
   // ---------- Capas de fondo: tierra (relieve de la isla > 0 m), costa y calles ----------
   // Tierra: una imagen con un píxel por celda de data/isla.js, colocada en el plano local con un ajuste afín
@@ -124,16 +110,14 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
   <div class="bm-bar">
     <b class="bm-title">Mapa de edificios</b>
     <form class="bm-search"><input placeholder="Nº o ref. catastral" inputmode="text" autocomplete="off"><button>Buscar</button></form>
-    <label class="bm-chip" title="Cada clic cambia el estado del edificio"><input type="checkbox"> Marcar con clic</label>
     <button class="bm-close" title="Cerrar (Esc o M)">✕</button>
   </div>
-  <div class="bm-legend"><span><i style="background:${MASK.acabado}"></i>Acabado</span><span><i style="background:${MASK.pendiente}"></i>Pendiente</span>
-    <span class="bm-count"></span><span class="bm-save"></span><button class="bm-export" title="Descargar edificios.json con los estados">Exportar</button></div>
+  <div class="bm-legend"><span class="bm-count"></span></div>
   <div class="bm-card hide"></div>
   <div class="bm-msg hide"></div>`;
   document.body.appendChild(root);
   const cv = root.querySelector('canvas'), g = cv.getContext('2d'), card = root.querySelector('.bm-card'), msg = root.querySelector('.bm-msg');
-  const paint = root.querySelector('.bm-chip input'), input = root.querySelector('.bm-search input');
+  const input = root.querySelector('.bm-search input');
   let W = 0, H = 0, dpr = 1, cx = 0, cz = 0, s = 1.2, sel = null, hover = null, dirty = true, open = false, me = null;
   const resize = () => { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; dirty = true; };
   addEventListener('resize', () => open && resize());
@@ -148,7 +132,7 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
     drawBase(g, s, vx0, vz0, vx1, vz1, false);
     const vis = [];
     for (const b of all) { const [x0, x1, z0, z1] = b.box; if (x1 < vx0 || x0 > vx1 || z1 < vz0 || z0 > vz1) continue; vis.push(b);
-      g.fillStyle = '#ffffff'; g.fill(b.path, 'evenodd'); g.fillStyle = MASK[b.estado] || MASK.pendiente; g.fill(b.path, 'evenodd'); }
+      g.fillStyle = PARCELA; g.fill(b.path, 'evenodd'); }
     g.lineWidth = Math.min(.6, .8 / s); g.strokeStyle = 'rgba(40,40,40,.55)'; if (s > .8) for (const b of vis) g.stroke(b.path);
     if (sel) { g.fillStyle = 'rgba(255,212,59,.55)'; g.fill(sel.path, 'evenodd'); }
     for (const [b, c, w] of [[hover, '#ffffff', 2.5], [sel, '#ffd43b', 4]]) if (b) { g.strokeStyle = '#10343f'; g.lineWidth = (w + 2) / s; g.stroke(b.path); g.strokeStyle = c; g.lineWidth = w / s; g.stroke(b.path); }
@@ -180,25 +164,16 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
     }
   }
   const tick = () => { if (!open) return; if (dirty) draw(); requestAnimationFrame(tick); };
-  const counts = () => {
-    const ac = all.filter(b => b.estado == 'acabado').length, np = Object.keys(pend).length;
-    root.querySelector('.bm-count').textContent = `${ac} de ${all.length} acabados (${(ac / all.length * 100).toFixed(1)} %)`;
-    const sv = root.querySelector('.bm-save');
-    sv.textContent = np ? `${np} cambios guardados solo en este navegador · usa Exportar` : '';
-    sv.className = 'bm-save' + (np ? ' warn' : '');
-  };
-  listeners.add(() => { counts(); if (sel) showCard(sel); dirty = true; });
+  const counts = () => { root.querySelector('.bm-count').textContent = `${all.length.toLocaleString('es')} edificios · clic en uno para ver su ficha`; };
 
   function showCard(b) {
     card.classList.remove('hide');
     const rc = /^[0-9A-Z]{14}$/.test(b.ref) ? `<a href="https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=${b.ref.slice(0, 7)}&rc2=${b.ref.slice(7, 14)}" target="_blank" rel="noopener">${b.ref}</a>` : b.ref;
     card.innerHTML = `<button class="bm-x" title="Cerrar">✕</button><div class="bm-n">Edificio nº ${b.n}</div>
       <div class="bm-meta">Ref. catastral: ${rc}<br>${b.pieces.length} ${b.pieces.length == 1 ? 'pieza' : 'piezas'} · hasta ${b.floors} ${b.floors == 1 ? 'planta' : 'plantas'} · ${Math.round(b.A)} m² de huella${b.provisional ? '<br><em>Número provisional (fuera de la zona numerada en v0.7)</em>' : ''}</div>
-      <div class="bm-state" style="background:${ESTADO_COLOR[b.estado]}">${b.estado == 'acabado' ? 'Acabado' : 'Pendiente'}</div>
-      <div class="bm-acts"><button class="bm-go">Ir delante</button><button class="bm-tg">${b.estado == 'acabado' ? 'Marcar pendiente' : 'Marcar acabado'}</button></div>`;
+      <div class="bm-acts"><button class="bm-go">Ir delante</button></div>`;
     card.querySelector('.bm-x').onclick = () => { sel = null; card.classList.add('hide'); dirty = true; };
     card.querySelector('.bm-go').onclick = () => { api.close(); goTo(b); };
-    card.querySelector('.bm-tg').onclick = () => toggle(b);
   }
   const select = (b, center) => { sel = b; dirty = true; if (!b) { card.classList.add('hide'); return; } if (center) { cx = b.lab[0]; cz = b.lab[1]; s = Math.max(s, 2.5); } showCard(b); };
   const flash = t => { msg.textContent = t; msg.classList.remove('hide'); clearTimeout(flash.t); flash.t = setTimeout(() => msg.classList.add('hide'), 2500); };
@@ -216,15 +191,12 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
   });
   const up = e => {
     if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId); if (pts.size < 2) pinch = null;
-    if (e.type == 'pointerup' && moved < 6 && pts.size == 0) { const b = at(...toWorld(e.clientX, e.clientY)); if (b && paint.checked) { toggle(b); select(b); } else select(b); }
+    if (e.type == 'pointerup' && moved < 6 && pts.size == 0) { select(at(...toWorld(e.clientX, e.clientY))); }
   };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('wheel', e => { e.preventDefault(); const [wx, wz] = toWorld(e.clientX, e.clientY); s = clampS(s * Math.exp(-e.deltaY * .0015)); cx = wx - (e.clientX - W / 2) / s; cz = wz - (e.clientY - H / 2) / s; dirty = true; }, { passive: false });
   root.querySelector('.bm-search').onsubmit = e => { e.preventDefault(); const b = get(input.value); if (b) { select(b, true); input.blur(); } else flash(`No encuentro «${input.value}»`); };
   root.querySelector('.bm-close').onclick = () => api.close();
-  root.querySelector('.bm-export').onclick = () => {
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([exportJSON()], { type: 'application/json' })); a.download = 'edificios.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  };
   addEventListener('keydown', e => {
     if (/INPUT|TEXTAREA/.test(e.target.tagName)) return;
     if (e.code == 'Escape' && open) api.close();
@@ -239,7 +211,7 @@ window.createMaps = function ({ C, viewer, D, ISLA, ground }) {
     const [lo2, la2] = toLL(b.lab[0], b.lab[1] + d);   // d metros al sur, mirando al norte
     camera.flyTo({ destination: C.Cartesian3.fromDegrees(lo2, la2, top + d * .75), orientation: { heading: 0, pitch: C.Math.toRadians(-35), roll: 0 }, duration: 2.5 });
     hl.forEach(e => viewer.entities.remove(e)); hl = [];
-    const col = C.Color.fromCssColorString(ESTADO_COLOR[b.estado]), t0 = performance.now();
+    const col = C.Color.fromCssColorString(RESALTE), t0 = performance.now();
     const mat = new C.ColorMaterialProperty(new C.CallbackProperty(() => { const t = (performance.now() - t0) / 1000; return col.withAlpha(t > 12 ? 0 : (.55 + .45 * Math.sin(t * 5)) * Math.min(1, (12 - t) / 2)); }, false));
     for (const p of b.pieces) {
       const h = p.base + p.f * 3 + .4, pos = C.Cartesian3.fromDegreesArrayHeights(p.r.concat([p.r[0]]).flatMap(([x, z]) => [...toLL(x, z), h]));

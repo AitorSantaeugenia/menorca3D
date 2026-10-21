@@ -155,11 +155,10 @@ Después: `python pipeline/preparar_terreno_isla.py` (paso de malla por defecto 
 
 ## Minimapa, mapa de edificios y día/noche
 - **Minimapa** (arriba a la derecha, al entrar en Es Castell): se orienta con la cámara, de modo que arriba es hacia donde miras, y el zoom depende de la altura. **Doble clic** o la tecla **M** abren el mapa de edificios.
-- **Mapa de edificios** (como en v0.7): norte arriba, cada parcela en rojo (pendiente) o verde (acabado) con su número de v0.7, que es estable. Las parcelas de fuera de esa zona llevan un número provisional.
+- **Mapa de edificios** (como en v0.7): norte arriba, cada parcela con su número de v0.7, que es estable, todas en el mismo color neutro. Las parcelas de fuera de esa zona llevan un número provisional.
   - **Clic en una parcela:** ficha con la referencia catastral, enlazada a la Sede del Catastro.
   - **Buscador:** por número o por referencia.
   - **«Ir delante»:** la cámara 3D vuela al edificio.
-  - **«Marcar con clic» y «Exportar»:** cambian el estado. Se guarda en el navegador y se descarga como `edificios.json`; luego `python pipeline/preparar_edificios.py edificios.json` lo pasa a `cesium/data/edificios.js`.
 - **Día/noche:** al abrir, sigue la hora real de Menorca, calculada con la altura del sol en Es Castell. El botón muestra el modo actual y se puede cambiar a mano, en cuyo caso pone «(manual)». Al salir o ponerse el sol vuelve solo a la hora real. Al pasar el ratón por el botón se ven las horas de salida y puesta del sol de hoy.
 
 ## Capas, servicios y bus L02

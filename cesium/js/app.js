@@ -322,11 +322,9 @@
       sel = -1; const c = scene.pickPosition(e.position), g = c && C.Cartographic.fromCartesian(c);
       const lo = g && C.Math.toDegrees(g.longitude), la = g && C.Math.toDegrees(g.latitude);
       const b = g && B.find(b => pipLL(lo, la, b.p)) || null, mb = b && maps.building(lo, la);
-      const EC = { pendiente: '#e03131', acabado: '#2f9e44' };
       $('card').innerHTML = (b ? `<b>Edificio nº ${mb ? mb.n : b.n || '?'}</b>${mb && mb.provisional ? ' <small class="k">(provisional)</small>' : ''}<br>` +
         `<span class="k">Ref. catastral</span> ${b.r} <span class="t">REAL</span><br>` +
-        `<span class="k">Plantas</span> ${b.f} <span class="t">REAL</span><br>` +
-        (mb ? `<span class="k">Estado</span> <span class="t" style="background:${EC[mb.estado]}">${mb.estado == 'acabado' ? 'Acabado' : 'Pendiente'}</span><br>` : '')
+        `<span class="k">Plantas</span> ${b.f} <span class="t">REAL</span><br>`
         : '<b>Edificio</b> <small class="k">(solo OSM)</small><br>') +
         `<span class="k">Fachada y tejado</span> <span class="t">PROCEDURAL</span><br>` +
         '<small class="k">Reglas y colores de v0.7, medidos en las fotos propias</small>' +
