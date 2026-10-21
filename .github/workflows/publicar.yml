@@ -1,0 +1,53 @@
+# Publica el visor Cesium en GitHub Pages, en /cesium/ (la raíz redirige allí): genera los modelos (con las casas de casas/).
+# Requisito una sola vez: Settings → Pages → Source: «GitHub Actions».
+name: Publicar visor
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar three.js (v0.7)
+        working-directory: v0.7
+        run: npm ci || npm install
+      - name: Modelos de la zona detallada y su detalle de calle
+        run: node pipeline/exportar_glb.mjs --zona
+      - name: Modelos del resto del municipio y su detalle de calle
+        run: node pipeline/exportar_glb.mjs --zonefile data/extension/zona_municipio.json --name municipio
+      # Sitio: el visor en /cesium/ y, en la raíz, una página que redirige a él
+      - name: Montar el sitio (visor en /cesium/)
+        run: |
+          mkdir -p _site
+          cp -r cesium _site/cesium
+          cp LICENSE ATRIBUCIONES.md _site/
+          cp LICENSE ATRIBUCIONES.md _site/cesium/
+          printf '%s\n' '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">' \
+            '<title>Menorca 3D</title><meta http-equiv="refresh" content="0; url=cesium/">' \
+            '<link rel="canonical" href="cesium/"></head>' \
+            '<body style="background:#0b1426;color:#ccc;font-family:sans-serif">' \
+            '<p>Abriendo el visor… <a href="cesium/" style="color:#e2a33e">Menorca 3D</a></p></body></html>' > _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,27 @@
+{
+ "nota": "Ajustes por edificio (nº de edificios.json). fachada: color de pared · tejado: 'teja' (cubierta de teja a cuatro aguas donde la forma lo permite). Origen: ajustes manuales.",
+ "edificios": {
+  "1061": {
+   "fachada": "#f3f1ea",
+   "tejado": "teja",
+   "fuente": "Ajuste manual: todas las casas blancas con tejado rojo"
+  },
+  "84": {
+   "fachada": "#9d8a6c",
+   "fuente": "Fotos de referencia: marés visto con esquinas blancas"
+  },
+  "65": {
+   "fachada": "#f3f1ea",
+   "tejado": "teja",
+   "fuente": "Fotos de referencia: casas blancas con tejado de teja"
+  },
+  "59": {
+   "fachada": "#f3f2ee",
+   "fuente": "Fotos de referencia: bloque blanco con franjas salmón y galerías"
+  },
+  "35": {
+   "fachada": "#f3f2ee",
+   "fuente": "Fotos de referencia: bloque blanco con franjas salmón y galerías; farmacia en la planta baja"
+  }
+ }
+}

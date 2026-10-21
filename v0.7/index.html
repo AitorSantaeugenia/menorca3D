@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Menorca 3D</title>
+<style>
+/* CSS crítico: se aplica antes de que cargue el JavaScript (en desarrollo, style.css llega con el código).
+   Evita que el HUD y los formularios se vean un instante sin estilo. */
+html,body{height:100%;margin:0;overflow:hidden;background:#070d18}
+#hud,#mm,#coords,#bld,#ui,#istatus,#map2d{display:none}
+#overlay:empty{display:none}
+#loader{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#070d18;color:#dbeaff;font:500 15px system-ui,sans-serif;letter-spacing:.08em;transition:opacity .6s}
+#loader .lg{font:700 clamp(30px,8vw,52px)/1 Georgia,serif;letter-spacing:.18em;color:#fff}#loader .lg span{font-weight:400;color:#f3ead2;margin-left:.2em}
+#loader .sp{width:38px;height:38px;border-radius:50%;border:3px solid rgba(160,210,255,.25);border-top-color:#9fd3ff;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style></head>
+<body>
+<div id="loader"><div class="lg">MENORCA<span>3D</span></div><div class="sp"></div><div id="lmsg">Cargando la isla…</div></div>
+<canvas id="c"></canvas>
+<canvas id="intro3d"></canvas>
+<div id="istatus"></div>
+<div id="overlay"></div>
+<div id="hud"><b id="who"></b><br><span id="zone"></span><br>
+<small>WASD mover · Shift correr · Espacio saltar · T turbo (prueba) · arrastra para girar · M mapa</small>
+<details><summary>Lugares</summary><div id="pl"></div></details>
+<form class="bgo" id="bgo"><input placeholder="Edificio nº" autocomplete="off"><button>Ir</button><button type="button" id="bmap">Mapa (M)</button></form></div>
+<canvas id="mm" width="140" height="140"></canvas>
+<div id="coords"></div>
+<div id="bld"></div>
+<div id="ui"><div id="stick"><div id="knob"></div></div><div class="rb" id="run">Correr</div><div class="rb" id="jmp">Saltar</div></div>
+<div id="attr"></div>
+<script type="module" src="/src/main.js"></script>
+</body></html>

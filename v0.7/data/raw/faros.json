@@ -1,0 +1,311 @@
+[
+ {
+  "id": "node/1566288357",
+  "name": "",
+  "lat": 39.8815072,
+  "lon": 4.3031898,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:group": "4",
+   "seamark:light:height": "7",
+   "seamark:light:period": "11",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0364.4",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(1.5)+0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566288494",
+  "name": "",
+  "lat": 39.8809197,
+  "lon": 4.304576,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:group": "3",
+   "seamark:light:height": "7",
+   "seamark:light:period": "9",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0364.2",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566288596",
+  "name": "",
+  "lat": 39.8774361,
+  "lon": 4.3062238,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:group": "2",
+   "seamark:light:height": "7",
+   "seamark:light:period": "7",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0364",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566288744",
+  "name": "Punta de Cala Figuera",
+  "lat": 39.8908409,
+  "lon": 4.2762529,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:height": "7",
+   "seamark:light:period": "5",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0362",
+   "seamark:light:sequence": "0.5+(4.5)",
+   "seamark:name": "Punta de Cala Figuera",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566288825",
+  "name": "Isla del Pinta",
+  "lat": 39.8918253,
+  "lon": 4.2702565,
+  "kind": "luz",
+  "tags": {
+   "seamark:beacon_lateral:category": "starboard",
+   "seamark:beacon_lateral:colour": "green",
+   "seamark:beacon_lateral:height": "3",
+   "seamark:beacon_lateral:system": "iala-a",
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "green",
+   "seamark:light:group": "2",
+   "seamark:light:height": "4",
+   "seamark:light:period": "7",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0362.4",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(4.5)",
+   "seamark:name": "Isla del Pinta",
+   "seamark:type": "beacon_lateral"
+  }
+ },
+ {
+  "id": "node/1566289003",
+  "name": "",
+  "lat": 39.8941949,
+  "lon": 4.2617673,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "green",
+   "seamark:light:group": "2",
+   "seamark:light:height": "3",
+   "seamark:light:period": "7",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0363.67",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289065",
+  "name": "Punta de Sa Bassa",
+  "lat": 39.8892424,
+  "lon": 4.2888505,
+  "kind": "luz",
+  "tags": {
+   "seamark:information": "10.",
+   "seamark:light:character": "Oc",
+   "seamark:light:colour": "green",
+   "seamark:light:height": "9",
+   "seamark:light:period": "4",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0361.6",
+   "seamark:name": "Punta de Sa Bassa",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289198",
+  "name": "",
+  "lat": 39.888001,
+  "lon": 4.2869334,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Oc",
+   "seamark:light:colour": "red",
+   "seamark:light:height": "16",
+   "seamark:light:period": "4",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0361.4",
+   "seamark:light:sequence": "3+(1)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289456",
+  "name": "",
+  "lat": 39.887656,
+  "lon": 4.2847809,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "yellow",
+   "seamark:light:group": "4",
+   "seamark:light:height": "2",
+   "seamark:light:period": "11",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0361.2",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(1.5)+0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289585",
+  "name": "Isla del Hospital",
+  "lat": 39.8856908,
+  "lon": 4.286674,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "green",
+   "seamark:light:height": "13",
+   "seamark:light:period": "5",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0361",
+   "seamark:light:sequence": "0.5+(4.5)",
+   "seamark:name": "Isla del Hospital",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289783",
+  "name": "",
+  "lat": 39.8884046,
+  "lon": 4.2904751,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:group": "4",
+   "seamark:light:height": "10",
+   "seamark:light:period": "11",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0360",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289869",
+  "name": "",
+  "lat": 39.8816982,
+  "lon": 4.2983341,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "green",
+   "seamark:light:group": "3",
+   "seamark:light:height": "9",
+   "seamark:light:period": "9",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0359",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(1.5)+0.5+(4.5)",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566289988",
+  "name": "",
+  "lat": 39.8814465,
+  "lon": 4.2936051,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "red",
+   "seamark:light:group": "3",
+   "seamark:light:height": "8",
+   "seamark:light:period": "9",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0358",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566290011",
+  "name": "Punta Lazareto",
+  "lat": 39.8759843,
+  "lon": 4.301757,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "green",
+   "seamark:light:group": "2",
+   "seamark:light:height": "13",
+   "seamark:light:period": "7",
+   "seamark:light:range": "1",
+   "seamark:light:reference": "E 0356",
+   "seamark:light:sequence": "0.5+(1.5)+0.5+(4.5)",
+   "seamark:name": "Punta Lazareto",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/1566290081",
+  "name": "Punta San Carlos",
+  "lat": 39.8652135,
+  "lon": 4.3069054,
+  "kind": "luz",
+  "tags": {
+   "seamark:light:1:character": "Oc",
+   "seamark:light:1:colour": "white",
+   "seamark:light:1:group": "2",
+   "seamark:light:1:height": "22",
+   "seamark:light:1:period": "6",
+   "seamark:light:1:range": "12",
+   "seamark:light:1:sector_end": "143",
+   "seamark:light:1:sector_start": "183",
+   "seamark:light:1:sequence": "3+(1),1+(1)",
+   "seamark:light:reference": "E 0354",
+   "seamark:name": "Punta San Carlos",
+   "seamark:type": "light_minor"
+  }
+ },
+ {
+  "id": "node/10860198361",
+  "name": "Far de Maó",
+  "lat": 39.8652144,
+  "lon": 4.306898,
+  "kind": "faro",
+  "tags": {
+   "height": "22",
+   "man_made": "lighthouse",
+   "name": "Far de Maó"
+  }
+ },
+ {
+  "id": "way/888669572",
+  "name": "Far de la Mola",
+  "lat": 39.8764565,
+  "lon": 4.3270721,
+  "kind": "faro",
+  "tags": {
+   "man_made": "lighthouse",
+   "name": "Far de la Mola",
+   "seamark:light:character": "Fl",
+   "seamark:light:colour": "white",
+   "seamark:light:group": "1+2",
+   "seamark:light:height": "51",
+   "seamark:light:period": "15",
+   "seamark:light:range": "8",
+   "seamark:light:reference": "E 0355",
+   "seamark:light:sequence": "0.5+(2)+0.5+(1.5)+0.5+(10)",
+   "seamark:name": "Punta del Espero",
+   "seamark:type": "light_minor"
+  }
+ }
+]

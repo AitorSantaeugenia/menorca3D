@@ -1,0 +1,33 @@
+# ---- Menorca3D v2: qué NO se sube a GitHub (detalles en GITHUB.md) ----
+
+# Fotos propias de referencia: privadas, no se publican
+imageRefs/
+
+# Copias de seguridad locales
+_copias/
+
+# Historial local de Forge (las casas de casas/*.forge.json SÍ se suben)
+casas/historial/
+
+# Datos en bruto descargados (~100 MB): se vuelven a bajar con pipeline/descargar_ide_menorca.py
+data/raw/
+
+# Archivos generados por pipeline/exportar_glb.mjs (~90 MB que cambian en cada exportación).
+# Se generan de nuevo en local o en GitHub Actions.
+cesium/models/
+cesium/assets/textures/
+
+# Dependencias y cachés
+node_modules/
+__pycache__/
+*.pyc
+.vite/
+dist/
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Carpeta temporal con workflows para mover a .github/workflows (no se sube)
+flujos_github/

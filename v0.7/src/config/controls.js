@@ -1,0 +1,1 @@
+export const CONTROLS = { WALK: 2.2, RUN: 5.5, TURBO: 4, JUMP: 4.5, GRAVITY: 12, MAX_SLOPE: 1.2, RADIUS: 0.4 };
