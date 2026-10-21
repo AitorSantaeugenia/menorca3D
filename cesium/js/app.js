@@ -76,6 +76,15 @@
     credit: new C.Credit('Ortofoto: Govern de les Illes Balears · IDEIB (Orto 2024, PNOA © scne.es)') }));
   const orthoLayers = [goib, ortho];
 
+  // ---------- Modo ligero ----------
+  // Se activa solo en móviles, tablets, televisores y equipos con poca memoria; ?ligero=1 lo fuerza y ?ligero=0 lo quita.
+  const LIGERO = (() => {
+    const q = new URLSearchParams(location.search).get('ligero'); if (q == '1') return true; if (q == '0') return false;
+    const ua = navigator.userAgent || '';
+    return /Mobi|Android|iPhone|iPad|iPod|SmartTV|SMART-TV|Web0S|webOS|NetCast|Tizen|HbbTV|CrKey|AFT|BRAVIA|Viera/i.test(ua)
+      || (navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+  })();
+  if (LIGERO) console.info('Menorca 3D: modo ligero (?ligero=0 para desactivarlo)');
   let viewer;
   try {
     viewer = new C.Viewer('cesium', {
@@ -91,7 +100,9 @@
   globe.baseColor = C.Color.fromCssColorString('#0b2236');      // si la ortofoto no carga, mar azul oscuro
   globe.depthTestAgainstTerrain = true;
   // Carga: más teselas en caché (la órbita de la intro no vuelve a pedir las mismas) y precarga de las vecinas
-  globe.tileCacheSize = 400; globe.preloadSiblings = true; globe.maximumScreenSpaceError = 2.5;
+  globe.tileCacheSize = LIGERO ? 150 : 400; globe.preloadSiblings = !LIGERO; globe.maximumScreenSpaceError = LIGERO ? 4 : 2.5;
+  // Modo ligero (móviles, televisores, equipos con poca memoria): menos resolución de dibujo y menos teselas
+  if (LIGERO) { viewer.resolutionScale = Math.min(1, 1.25 / (devicePixelRatio || 1)); scene.postProcessStages.fxaa.enabled = false; }
   // Sin «faldones» en los bordes de las teselas del relieve: asomaban por encima del mar como rayas negras finas
   globe.showSkirts = false;
   // Alejarse como mucho un poco más que la vista inicial de la isla (62 km)
@@ -147,36 +158,61 @@
   const buildings = instances.length ? scene.primitives.add(new C.Primitive({ geometryInstances: instances, appearance: new C.PerInstanceColorAppearance({ translucent: false }), asynchronous: true })) : null;
 
   // ---------- Modelos detallados: geometría y fachadas de v0.7 (GLB + CustomShader de js/facade.js) ----------
-  // Cada entrada de MENORCA_MODELS es una zona exportada: varios bloques GLB que comparten origen y shader.
-  // Carga: los modelos NO se piden al abrir la página (la intro solo necesita la isla). Empiezan cuando la isla ya está
-  // en pantalla, del bloque más cercano al Ayuntamiento al más lejano y de pocos en pocos, para no frenar la intro.
-  // Cada modelo solo se dibuja cerca: edificios hasta 25 km, detalle de calle hasta 6 km.
-  const models = [], shaders = [], queue = []; let calleOn = true;
-  const C0 = { lon: 4.2908, lat: 39.8803 };
+  // Cada entrada de MENORCA_MODELS es una zona exportada: varios bloques GLB de 300 m que comparten origen y shader.
+  // Carga POR CERCANÍA (los modelos no se piden al abrir la página: empiezan cuando la isla ya está en pantalla):
+  //  · Edificios: se cargan todos (se ven desde lejos), del bloque más cercano a la cámara al más lejano.
+  //  · Detalle de calle (el 70 % del peso): solo los bloques a menos de CALLE_R del punto al que mira la cámara y con la
+  //    cámara a menos de 4 km de altura; al alejarse se quitan de memoria y se vuelven a pedir al volver.
+  // De pocos en pocos (MAXC a la vez); en modo ligero, menos a la vez y un radio de calle más corto.
+  const models = [], shaders = [], items = []; let calleOn = true;
+  const MAXC = LIGERO ? 3 : 6, CALLE_R = LIGERO ? 600 : 900, CALLE_ALT = 4000;
   for (const M of MODELS) {
     const shader = createFacadeShader(C, M.tex); shaders.push(shader);
     for (const part of M.models) {
       const o = part.origin || M.origin;   // cada bloque lleva su propio origen (plano tangente en su centro)
-      queue.push({ M, part, o, shader, d: Math.hypot((o.lon - C0.lon) * T.kx, (o.lat - C0.lat) * T.kz) + (M.refs.length ? 0 : 150) });
+      items.push({ M, part, o, shader, calle: !M.refs.length, estado: 'pendiente', m: null });
     }
   }
-  queue.sort((a, b) => a.d - b.d);
-  const NQ = queue.length, MAXC = 6; let active = 0, loaded = 0;
-  const mstat = () => { $('mstat').textContent = loaded < NQ ? `Cargando modelos ${loaded}/${NQ}` : ''; };
+  const NB = items.filter(q => !q.calle).length; let active = 0;
+  const C0 = { lon: 4.2908, lat: 39.8803 };
+  function puntoCamara() {   // punto del suelo al que mira la cámara (o, si mira al cielo, el que tiene debajo) y altura
+    const cv = scene.canvas, p = camera.pickEllipsoid(new C.Cartesian2(cv.clientWidth / 2, cv.clientHeight / 2)), c = camera.positionCartographic;
+    const g = p ? C.Cartographic.fromCartesian(p) : c;
+    return { lon: C.Math.toDegrees(g.longitude), lat: C.Math.toDegrees(g.latitude), alt: c.height };
+  }
+  const dist = (q, t) => Math.hypot((q.o.lon - t.lon) * T.kx, (q.o.lat - t.lat) * T.kz);
+  const quitar = q => { const i = models.findIndex(x => x.m === q.m); if (i >= 0) models.splice(i, 1); scene.primitives.remove(q.m); q.m = null; q.estado = 'pendiente'; };
+  const mstat = () => {
+    const ed = items.filter(q => !q.calle && q.estado == 'cargado').length, pend = items.filter(q => q.estado == 'cargando').length;
+    $('mstat').textContent = ed < NB ? `Cargando edificios ${ed}/${NB}` : pend ? 'Cargando detalle de calle…' : '';
+  };
   function pump() {
-    while (active < MAXC && queue.length) {
-      const q = queue.shift(); active++;
-      const finish = () => { active--; loaded++; mstat(); pump(); };
+    if (!modelsStarted) return;
+    const t = modelsStarted === 'intro' ? C0 : puntoCamara(), calleSi = calleOn && t.alt < CALLE_ALT;
+    if (modelsStarted === 'intro') t.alt = Infinity;
+    for (const q of items) {   // quitar de memoria el detalle de calle lejano
+      if (q.calle && q.estado == 'cargado' && (!calleSi || dist(q, t) > CALLE_R * 2)) quitar(q);
+    }
+    const cand = items.filter(q => q.estado == 'pendiente' && (!q.calle || (calleSi && dist(q, t) < CALLE_R + 212)))
+      .sort((a, b) => (a.calle - b.calle) * (calleSi ? 0 : 1) || dist(a, t) - dist(b, t));
+    while (active < MAXC && cand.length) {
+      const q = cand.shift(); active++; q.estado = 'cargando';
+      const fin = ok => { active--; if (q.estado == 'cargando') q.estado = ok ? 'cargado' : 'error'; mstat(); pump(); };
       C.Model.fromGltfAsync({ url: q.part.url, customShader: q.shader,
         modelMatrix: C.Transforms.eastNorthUpToFixedFrame(C.Cartesian3.fromDegrees(q.o.lon, q.o.lat, 0)),
         upAxis: C.Axis.Y, forwardAxis: C.Axis.X,   // glTF estándar: y arriba, sin el giro extra que Cesium aplica por defecto
-        distanceDisplayCondition: new C.DistanceDisplayCondition(0, q.M.refs.length ? 25000 : 6000) })
-        .then(m => { if (!q.M.refs.length) m.show = calleOn; scene.primitives.add(m); models.push({ m, M: q.M }); m.readyEvent.addEventListener(finish); m.errorEvent.addEventListener(finish); })
-        .catch(err => { console.error('No se pudo cargar', q.part.url, err); finish(); });
+        distanceDisplayCondition: new C.DistanceDisplayCondition(0, q.calle ? 6000 : 25000) })
+        .then(m => { q.m = m; if (q.calle) m.show = calleOn; scene.primitives.add(m); models.push({ m, M: q.M });
+          m.readyEvent.addEventListener(() => fin(true)); m.errorEvent.addEventListener(() => fin(false)); })
+        .catch(err => { console.error('No se pudo cargar', q.part.url, err); fin(false); });
     }
+    mstat();
   }
   let modelsStarted = false;
-  const startModels = () => { if (modelsStarted || !NQ) return; modelsStarted = true; mstat(); pump(); };
+  // Al empezar (intro) se prioriza Es Castell; al moverse la cámara, lo que tiene delante
+  const startModels = () => { if (modelsStarted || !items.length) return; modelsStarted = 'intro'; pump(); setTimeout(() => { modelsStarted = true; pump(); }, 4000); };
+  camera.moveEnd.addEventListener(() => pump());
+  setInterval(() => pump(), 2500);
   if (MODELS.length && location.protocol == 'file:')
     console.warn('Los modelos detallados necesitan un servidor local: python -m http.server 8080 dentro de la carpeta cesium');
 
@@ -409,7 +445,7 @@
   setTimeout(ready, 15000);
   // ---------- Capas (js/servicios.js) ----------
   const servicios = createServicios({ C, viewer, ground, border: D.border, toggles: {
-    calle: v => { calleOn = v; for (const o of models) if (!o.M.refs.length) o.m.show = v; },
+    calle: v => { calleOn = v; for (const o of models) if (!o.M.refs.length) o.m.show = v; pump(); },
     frontera: v => { for (const b of border) b.show = v; },
     faros: v => { farosOn = v; applyNight(); },
     mar: v => { sea.show = v; },

@@ -149,7 +149,10 @@ Después: `python pipeline/preparar_terreno_isla.py` (paso de malla por defecto 
 
 ## Carga y efectos del visor
 - **Pantalla de carga:** se quita cuando la isla ya está completa (relieve, ortofoto y mar), con un máximo de 15 s, para que no se vean teselas de baja resolución apareciendo y desapareciendo.
-- **Modelos:** no se piden al abrir la página. Empiezan 1,5 s después de que aparezca la isla, o al pulsar «Entrar», del bloque más cercano al Ayuntamiento al más lejano y 6 a la vez. Abajo, en el centro, se ve el progreso. Los edificios se dibujan hasta 25 km y el detalle de calle hasta 6 km.
+- **Modelos, carga por cercanía:** no se piden al abrir la página. Empiezan 1,5 s después de que aparezca la isla, o al pulsar «Entrar». Abajo, en el centro, se ve el progreso.
+  - **Edificios:** se cargan todos, porque se ven desde lejos, del bloque más cercano al punto al que mira la cámara al más lejano. Se dibujan hasta 25 km.
+  - **Detalle de calle (aceras, árboles, muros…),** el 70 % del peso: solo los bloques a menos de 900 m del punto al que mira la cámara, y con la cámara a menos de 4 km de altura. Al alejarse, se quitan de memoria y se vuelven a pedir al volver.
+- **Modo ligero:** se activa solo en móviles, tablets, televisores y equipos con poca memoria. Dibuja a menos resolución, con menos teselas y sin suavizado de bordes, carga 3 modelos a la vez en vez de 6 y el detalle de calle solo a 600 m. Se fuerza con `?ligero=1` al final de la dirección y se quita con `?ligero=0`.
 - **Mar:** lámina animada con oleaje PROCEDURAL (material «Water» de Cesium) a 0 m. Bajo ella, el relieve del mar se hunde 4 m para que no haya parpadeos.
 - **Haz de los faros:** de 1,2 a 5 km de largo. Se apaga por debajo de 1,5 km de altura de cámara y se ve entero a partir de 6 km.
 
