@@ -178,7 +178,8 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
     billboard: { image: icon('bus'), width: 28, height: 35, verticalOrigin: C.VerticalOrigin.BOTTOM, disableDepthTestDistance: Number.POSITIVE_INFINITY,
       color: estimado ? C.Color.WHITE.withAlpha(.8) : C.Color.WHITE },
     label: { text: texto, font: '600 11px system-ui', fillColor: C.Color.WHITE, outlineColor: C.Color.BLACK, outlineWidth: 3,
-      style: C.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new C.Cartesian2(0, -40), disableDepthTestDistance: Number.POSITIVE_INFINITY } });
+      style: C.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new C.Cartesian2(0, -40), disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      distanceDisplayCondition: new C.DistanceDisplayCondition(0, 8000) } });
   async function pollLive() {
     // En directo: cada 20 s mientras funcione; si el primer intento falla (sin intermediario), ya no se vuelve a pedir
     if (liveOK !== false && Date.now() - liveAt > 19000) {
@@ -192,18 +193,17 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
     live.entities.removeAll(); ahora = [];
     if (liveOK) {
       for (const b of liveData) { busEntity(+b.lon, +b.lat, `Bus ${b.bus_id} · ${b.k == 1 ? '→ Es Castell' : '→ Maó'}`, false); ahora.push({ lon: +b.lon, lat: +b.lat }); }
-      liveInfo = liveData.length ? liveData.map((b, i) => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small> ${botonBus(i, 'Ver')}</li>`).join('')
-        : '<li>Ahora mismo no hay ningún autobús de la L02 en ruta.</li>';
+      liveInfo = liveData.length ? liveData.map((b, i) => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small> ${botonBus(i, '🚌 Ver bus en ruta')}</li>`).join('')
+        : `<li>Ahora mismo no hay ningún autobús de la L02 en ruta. ${botonBus('inicio', '🚏 Ver la estación de Maó')}</li>`;
       liveInfo = '<li class="k sm">EN DIRECTO (TMSA)</li>' + liveInfo;
     } else if (liveOK === false) {
       const E = estimados(), m = new Date().getHours() * 60 + new Date().getMinutes();
       for (const e of E) { busEntity(e.ll[1], e.ll[0], `≈ ${e.k == 1 ? '→ Es Castell' : '→ Maó'} (${hm(e.salida)})`, true); ahora.push({ lon: e.ll[1], lat: e.ll[0] }); }
       liveInfo = '<li class="k sm">ESTIMADO según el horario: sin retrasos ni incidencias</li>' + (E.length ? E.map((e, i) => `<li><b>${esc(e.sentido)}</b> (salida ${hm(e.salida)}): `
         + (e.anterior ? `entre ${esc(e.anterior)} y <b>${esc(e.siguiente)}</b>` : `en <b>${esc(e.siguiente)}</b>`)
-        + (e.llegaVisor != null ? ` · en Es Castell (Església) ${e.llegaVisor - m <= 0 ? 'ahora' : `en ${e.llegaVisor - m} min`}` : ` · llega a las ${hm(e.fin)}`) + ` ${botonBus(i, 'Ver')}</li>`).join('')
-        : '<li>Según el horario, ahora mismo no hay ningún autobús de la L02 en ruta.</li>');
+        + (e.llegaVisor != null ? ` · en Es Castell (Església) ${e.llegaVisor - m <= 0 ? 'ahora' : `en ${e.llegaVisor - m} min`}` : ` · llega a las ${hm(e.fin)}`) + ` ${botonBus(i, '🚌 Ver bus en ruta')}</li>`).join('')
+        : `<li>Según el horario, ahora mismo no hay ningún autobús de la L02 en ruta. ${botonBus('inicio', '🚏 Ver la estación de Maó')}</li>`);
     } else liveInfo = '<li class="k">Consultando…</li>';
-    if (ahora.length) liveInfo = `<li class="busver">${botonBus(0, ahora.length > 1 ? '🚌 Ver bus en ruta (el primero)' : '🚌 Ver bus en ruta')}</li>` + liveInfo;
     const el = $('busLive'); if (el) el.innerHTML = liveInfo;
   }
   const startLive = () => { if (liveTimer) return; pollLive(); liveTimer = setInterval(pollLive, 5000); };
@@ -211,10 +211,17 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
 
   // ---------- Panel de información ----------
   const panel = $('info');
-  panel.addEventListener('click', e => { const b = e.target.closest('[data-busgo]'); if (b) verBus(ahora[+b.dataset.busgo]); });
-  const close = () => { panel.style.display = 'none'; route.show = false; routeLocal.show = !!layerOn.ruta; stopLive(); };
+  panel.addEventListener('click', e => {
+    const b = e.target.closest('[data-busgo]'); if (!b) return;
+    if (b.dataset.busgo == 'inicio') {   // sin autobuses en ruta: la parada de salida (estación de autobuses de Maó)
+      const st = BUS && BUS.stops[BUS.sentidos[0].stops[0]]; if (st) verBus({ lon: st.ll[1], lat: st.ll[0] });
+    } else verBus(ahora[+b.dataset.busgo]);
+  });
+  // Los autobuses se ven siempre que la capa «Ruta y autobuses de la L02» esté activa (y, si no, con la ficha de una parada)
+  const busesSegunCapa = () => { if (layerOn.ruta) startLive(); else stopLive(); };
+  const close = () => { panel.style.display = 'none'; route.show = false; routeLocal.show = !!layerOn.ruta; busesSegunCapa(); };
   function abrir(s) {
-    if (!(s.bus && BUS)) { route.show = false; routeLocal.show = !!layerOn.ruta; stopLive(); }
+    if (!(s.bus && BUS)) { route.show = false; routeLocal.show = !!layerOn.ruta; busesSegunCapa(); }
     let h = `<button class="ix" title="Cerrar">✕</button><div class="ih"><img src="${icon(s.tipo)}" alt=""><b>${esc(s.nombre)}</b></div>`;
     if (s.dir) h += `<div class="k">${esc(s.dir)}</div>`;
     if (s.tel) h += `<div>☎ ${esc(s.tel)}</div>`;
@@ -261,7 +268,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
   // ---------- Panel de capas ----------
   const CAPAS = [
     { id: 'servicios', nombre: 'Servicios (ayuntamiento, iglesia, salud, paradas de bus…)', on: true },
-    { id: 'ruta', nombre: 'Ruta del bus L02 en Es Castell (clic en una parada: ruta completa)', on: true },
+    { id: 'ruta', nombre: 'Ruta y autobuses de la L02 (clic en una parada: ruta completa y horarios)', on: true },
     { id: 'calle', nombre: 'Detalle de calle (aceras, árboles, muros…)', on: true },
     { id: 'frontera', nombre: 'Frontera del municipio', on: true },
     { id: 'faros', nombre: 'Faros y balizas', on: true },
@@ -272,7 +279,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
   const set = (id, v) => {
     layerOn[id] = v;
     if (id == 'servicios') bills.show = labels.show = v;
-    else if (id == 'ruta') { if (!route.show) routeLocal.show = v; }
+    else if (id == 'ruta') { if (!route.show) { routeLocal.show = v; busesSegunCapa(); } }
     else toggles[id] && toggles[id](v);
   };
   const lp = $('layers');
