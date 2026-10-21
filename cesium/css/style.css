@@ -89,6 +89,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:#070d18;font-family:sy
 #info table{border-collapse:collapse;font-size:11px;margin-top:3px}#info th,#info td{border:1px solid #e1e8ec;padding:2px 4px;text-align:center;white-space:nowrap}
 #info th{background:#f4f7f8;font-weight:600;white-space:normal;min-width:62px;vertical-align:bottom}#info .me{background:#fff3bf}
 #info code{background:#eef2f4;padding:0 4px;border-radius:4px}
+#info .busgo{border:0;border-radius:7px;background:#1f5fa8;color:#fff;font:600 11px system-ui;padding:2px 8px;cursor:pointer;margin-left:2px}
+#info .busver{list-style:none;margin:4px 0 6px -18px}#info .busver .busgo{font-size:13px;padding:6px 12px;margin:0}
 @media (max-width:600px){#ctl{top:calc(118px + env(safe-area-inset-top,0px));width:104px}#layers{right:120px;width:min(230px,calc(100vw - 140px))}#info{top:auto;bottom:10px;max-height:55vh}}
 .go2{padding:8px 18px;border:1px solid rgba(255,255,255,.45);border-radius:20px;background:transparent;color:#fff;font:500 14px system-ui;cursor:pointer}
 .go2:hover{background:rgba(255,255,255,.12)}

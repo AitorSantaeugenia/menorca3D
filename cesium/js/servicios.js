@@ -120,7 +120,15 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
   //    expedición en ruta, el punto del recorrido que corresponde a la hora actual, sin retrasos.
   const LIVE_URL = window.MENORCA_BUS_DIRECTO || '/tmsa/posicion/602/{sentido}';
   const live = new C.CustomDataSource('busLive'); viewer.dataSources.add(live);
-  let liveTimer = null, liveOK = null, liveData = [], liveAt = 0, liveInfo = '';
+  let liveTimer = null, liveOK = null, liveData = [], liveAt = 0, liveInfo = '', ahora = [];   // ahora: autobuses en la ficha (para «Ver bus en ruta»)
+  // «Ver bus en ruta»: la cámara vuela hasta encima del autobús (también fuera de Es Castell), mirando al norte
+  const botonBus = (i, txt) => `<button class="busgo" data-busgo="${i}">${txt}</button>`;
+  function verBus(b) {
+    if (!b) return;
+    const alt = 380, pitch = C.Math.toRadians(-55), atras = alt / Math.tan(-pitch);   // metros al sur del autobús
+    viewer.camera.flyTo({ destination: C.Cartesian3.fromDegrees(b.lon, b.lat - atras / 111000, ground(b.lon, b.lat) + alt),
+      orientation: { heading: 0, pitch, roll: 0 }, duration: 2.5 });
+  }
 
   // Recorrido de cada sentido en metros y distancia de cada parada a lo largo de él (paradas en orden)
   const R = {};
@@ -181,20 +189,21 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
       }
       if (ok) { liveOK = true; liveData = out; } else if (liveOK == null) liveOK = false;
     }
-    live.entities.removeAll();
+    live.entities.removeAll(); ahora = [];
     if (liveOK) {
-      for (const b of liveData) busEntity(+b.lon, +b.lat, `Bus ${b.bus_id} · ${b.k == 1 ? '→ Es Castell' : '→ Maó'}`, false);
-      liveInfo = liveData.length ? liveData.map(b => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small></li>`).join('')
+      for (const b of liveData) { busEntity(+b.lon, +b.lat, `Bus ${b.bus_id} · ${b.k == 1 ? '→ Es Castell' : '→ Maó'}`, false); ahora.push({ lon: +b.lon, lat: +b.lat }); }
+      liveInfo = liveData.length ? liveData.map((b, i) => `<li>Bus ${esc(b.bus_id)} (${b.k == 1 ? 'hacia Es Castell' : 'hacia Maó'}, salida ${esc(b.viaje)}): próxima parada <b>${esc(b.parada_siguiente_nombre || '—')}</b> · ${esc(b.retraso || '')} <small>(${esc(b.hora_posicion || '')})</small> ${botonBus(i, 'Ver')}</li>`).join('')
         : '<li>Ahora mismo no hay ningún autobús de la L02 en ruta.</li>';
       liveInfo = '<li class="k sm">EN DIRECTO (TMSA)</li>' + liveInfo;
     } else if (liveOK === false) {
       const E = estimados(), m = new Date().getHours() * 60 + new Date().getMinutes();
-      for (const e of E) busEntity(e.ll[1], e.ll[0], `≈ ${e.k == 1 ? '→ Es Castell' : '→ Maó'} (${hm(e.salida)})`, true);
-      liveInfo = '<li class="k sm">ESTIMADO según el horario: sin retrasos ni incidencias</li>' + (E.length ? E.map(e => `<li><b>${esc(e.sentido)}</b> (salida ${hm(e.salida)}): `
+      for (const e of E) { busEntity(e.ll[1], e.ll[0], `≈ ${e.k == 1 ? '→ Es Castell' : '→ Maó'} (${hm(e.salida)})`, true); ahora.push({ lon: e.ll[1], lat: e.ll[0] }); }
+      liveInfo = '<li class="k sm">ESTIMADO según el horario: sin retrasos ni incidencias</li>' + (E.length ? E.map((e, i) => `<li><b>${esc(e.sentido)}</b> (salida ${hm(e.salida)}): `
         + (e.anterior ? `entre ${esc(e.anterior)} y <b>${esc(e.siguiente)}</b>` : `en <b>${esc(e.siguiente)}</b>`)
-        + (e.llegaVisor != null ? ` · en Es Castell (Església) ${e.llegaVisor - m <= 0 ? 'ahora' : `en ${e.llegaVisor - m} min`}` : ` · llega a las ${hm(e.fin)}`) + '</li>').join('')
+        + (e.llegaVisor != null ? ` · en Es Castell (Església) ${e.llegaVisor - m <= 0 ? 'ahora' : `en ${e.llegaVisor - m} min`}` : ` · llega a las ${hm(e.fin)}`) + ` ${botonBus(i, 'Ver')}</li>`).join('')
         : '<li>Según el horario, ahora mismo no hay ningún autobús de la L02 en ruta.</li>');
     } else liveInfo = '<li class="k">Consultando…</li>';
+    if (ahora.length) liveInfo = `<li class="busver">${botonBus(0, ahora.length > 1 ? '🚌 Ver bus en ruta (el primero)' : '🚌 Ver bus en ruta')}</li>` + liveInfo;
     const el = $('busLive'); if (el) el.innerHTML = liveInfo;
   }
   const startLive = () => { if (liveTimer) return; pollLive(); liveTimer = setInterval(pollLive, 5000); };
@@ -202,6 +211,7 @@ window.createServicios = function ({ C, viewer, ground, toggles, border = [] }) 
 
   // ---------- Panel de información ----------
   const panel = $('info');
+  panel.addEventListener('click', e => { const b = e.target.closest('[data-busgo]'); if (b) verBus(ahora[+b.dataset.busgo]); });
   const close = () => { panel.style.display = 'none'; route.show = false; routeLocal.show = !!layerOn.ruta; stopLive(); };
   function abrir(s) {
     if (!(s.bus && BUS)) { route.show = false; routeLocal.show = !!layerOn.ruta; stopLive(); }
