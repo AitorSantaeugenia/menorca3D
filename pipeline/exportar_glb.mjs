@@ -118,6 +118,13 @@ function forgeGroup(F) {
     const k = JSON.stringify(m);
     if (!mats.has(k)) {
       const side = m.doble === false ? THREE.FrontSide : THREE.DoubleSide;
+      // Foto de fachada («Calcar desde foto» de Forge): la imagen va en F.fotos y se escribe como textura propia
+      if (m.kind == 'foto') {
+        const fm = new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true, side });
+        fm.userData.foto = String(m.foto || '').replace(/[^a-z0-9]/gi, ''); fm.userData.data = F.fotos && F.fotos[m.foto];
+        if (fm.userData.foto && fm.userData.data) { mats.set(k, fm); return fm; }
+        console.error(`Forge: ${F.ref}: falta la foto ${m.foto}; se usa color liso`);
+      }
       mats.set(k, m.kind == 'fachada' ? createFacadeMaterial()
         : TEXS[m.kind] ? texturedMaterial(m.kind, { vertexColors: true, side })
           : new THREE.MeshLambertMaterial({ color: 0xffffff, vertexColors: true, side, ...(m.emissive ? { emissive: new THREE.Color(m.emissive) } : {}) }));
@@ -161,6 +168,7 @@ const TEXDIR = path.join(V07, 'public/assets/textures');
 const { TEXTURES } = await imp('src/core/textures.js');
 const SIZE = Object.fromEntries(Object.entries(TEXTURES).map(([k, v]) => [k, v.size]));   // metros por repetición
 const kindOf = m => {
+  if (m.userData && m.userData.foto) return 'foto_' + m.userData.foto;
   if (m.onBeforeCompile && m.onBeforeCompile.toString().includes('aWall')) return 'fachada';
   for (const n of Object.keys(TEXTURES)) if (m.map && m.map === tex(n).map) return n;
   return 'color';
@@ -262,10 +270,14 @@ function writeGLB(blk, file, origin) {
   for (const Q of all) for (let i = 0; i < Q.length; i++) { const k = i % 3; if (Q[i] < mn[k]) mn[k] = Q[i]; if (Q[i] > mx[k]) mx[k] = Q[i]; }
   const sc = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 1e-3) / 65535;
   for (const [, e] of blk) {
-    const m = e.mat, pbr = { metallicFactor: 0, roughnessFactor: 1 }, mat = { name: e.kind, pbrMetallicRoughness: pbr, doubleSided: m.side == THREE.DoubleSide };
+    const m = e.mat, foto = e.kind.startsWith('foto_'), pbr = { metallicFactor: 0, roughnessFactor: 1 }, mat = { name: e.kind, pbrMetallicRoughness: pbr, doubleSided: m.side == THREE.DoubleSide };
     if (e.kind == 'color') {
       pbr.baseColorFactor = [m.color.r, m.color.g, m.color.b, 1];   // three guarda los colores en lineal, como glTF
       if (m.emissive && (m.emissive.r || m.emissive.g || m.emissive.b)) mat.emissiveFactor = [m.emissive.r, m.emissive.g, m.emissive.b];
+    } else if (foto) {   // foto de fachada de Forge: data URL → cesium/assets/textures/foto_<id>.jpg
+      const f = e.kind + '.jpg', b64 = String(m.userData.data).split(',')[1] || '';
+      if (!fs.existsSync(path.join(TEXOUT, f))) fs.writeFileSync(path.join(TEXOUT, f), Buffer.from(b64, 'base64'));
+      pbr.baseColorTexture = { index: texture(f) };
     } else {
       pbr.baseColorTexture = { index: texture(`${e.kind == 'fachada' ? 'estuco' : e.kind}_albedo.png`) };
       if (m.color && (m.color.r < 1 || m.color.g < 1 || m.color.b < 1)) pbr.baseColorFactor = [m.color.r, m.color.g, m.color.b, 1];
@@ -279,7 +291,7 @@ function writeGLB(blk, file, origin) {
       const p = [0, 1, 2].map(k => Math.round((e.q[v * 3 + k] - mn[k]) / sc));
       const nr = [0, 1, 2].map(k => Math.round(Math.max(-1, Math.min(1, a.normal[v * 3 + k])) * 127));
       const c = e.hasColor ? [0, 1, 2].map(k => Math.round(Math.max(0, Math.min(1, a.color[v * 3 + k])) * 255)) : [];
-      const uv = tex ? [a.uvRaw[v * 2] / s, a.uvRaw[v * 2 + 1] / s] : [];
+      const uv = foto ? [a.uvRaw[v * 2], 1 - a.uvRaw[v * 2 + 1]] : tex ? [a.uvRaw[v * 2] / s, a.uvRaw[v * 2 + 1] / s] : [];   // glTF: v hacia abajo
       const ex = fac ? [a.uvRaw[v * 2], a.uvRaw[v * 2 + 1], ...a.aWall.slice(v * 4, v * 4 + 4), ...a.aFac.slice(v * 4, v * 4 + 4)] : [];
       const key = p.join() + '|' + nr.join() + '|' + c.join() + '|' + uv.map(x => x.toFixed(4)).join() + '|' + ex.map(x => x.toFixed(4)).join();
       let id = map.get(key);

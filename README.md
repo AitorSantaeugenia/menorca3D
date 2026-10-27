@@ -304,6 +304,7 @@ Después: `python pipeline/preparar_terreno_isla.py` (paso de malla por defecto 
 - `pipeline/exportar_glb.mjs` lee esa carpeta. Para cada referencia editada, usa la casa de Forge **en lugar de** la generada por v0.7.
   - Va en los mismos bloques `zona_*.glb` / `municipio_*.glb`, con los mismos materiales y el mismo shader de fachada.
   - `--sin-forge` exporta como antes; `--forge <carpeta>` usa otra carpeta.
+  - Si una pared de Forge usa una foto como textura («Calcar desde foto»), la imagen va dentro del `.forge.json` y el exportador la escribe como `cesium/assets/textures/foto_<id>.jpg`.
 - El detalle de calle sigue esquivando la huella del Catastro de las casas editadas.
 
 ## Limitaciones conocidas
